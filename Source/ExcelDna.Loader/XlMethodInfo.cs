@@ -427,12 +427,14 @@ namespace ExcelDna.Loader
             ILGenerator wrapIL = wrapper.GetILGenerator();
             Label endOfMethod = wrapIL.DefineLabel();
 
+            LocalBuilder exceptionobj = wrapIL.DeclareLocal(typeof(Exception));
             LocalBuilder retobj = null;
             if (HasReturnType)
             {
                 // Make a local to contain the return value
                 retobj = wrapIL.DeclareLocal(ReturnType.DelegateParamType);
             }
+
             if (emitExceptionHandler)
             {
                 // Start the Try block
@@ -445,21 +447,28 @@ namespace ExcelDna.Loader
                 // First is the target of the delegate
                 wrapIL.Emit(OpCodes.Ldarg_S, 0);
             }
-            for (byte i = 0; i < Parameters.Length; i++)
+            for (short i = 0; i < Parameters.Length; i++)
             {
-                if (i < 255)
-                {
-                    byte argIndex = isInstanceMethod ? (byte)(i + 1) : i;
-                    wrapIL.Emit(OpCodes.Ldarg_S, argIndex);
-                }
-                else
-                {
-                    short argIndex = isInstanceMethod ? (short)(i + 1) : i;
-                    wrapIL.Emit(OpCodes.Ldarg, argIndex);
-                }
+                EmitLdarg(i, isInstanceMethod, wrapIL);
                 XlParameterInfo pi = Parameters[i];
                 if (pi.BoxedValueType != null)
                 {
+                    // A marshaller for a boxed value type can fail and store an exception in boxed parameter instead of the value.
+                    // here we test if that's the case and rethrow the exception here where it's safe to do so.
+                    wrapIL.Emit(OpCodes.Isinst, typeof(Exception));
+                    wrapIL.Emit(OpCodes.Stloc_0);
+                    wrapIL.Emit(OpCodes.Ldloc_0);
+                    wrapIL.Emit(OpCodes.Ldnull);
+                    wrapIL.Emit(OpCodes.Cgt_Un);
+                    wrapIL.Emit(OpCodes.Stloc_S, exceptionobj);
+                    wrapIL.Emit(OpCodes.Ldloc_S, exceptionobj);
+                    Label afterParamThrow = wrapIL.DefineLabel();
+                    wrapIL.Emit(OpCodes.Brfalse, afterParamThrow);
+                    wrapIL.Emit(OpCodes.Ldloc_0, exceptionobj);
+                    wrapIL.Emit(OpCodes.Throw);
+
+                    wrapIL.MarkLabel(afterParamThrow);
+                    EmitLdarg(i, isInstanceMethod, wrapIL);
                     wrapIL.Emit(OpCodes.Unbox_Any, pi.BoxedValueType);
                 }
             }
@@ -510,7 +519,21 @@ namespace ExcelDna.Loader
 
             return wrapper;
         }
-        
+
+        private static void EmitLdarg(short i, bool isInstanceMethod, ILGenerator wrapIL)
+        {
+            if (i < 255)
+            {
+                byte argIndex = isInstanceMethod ? (byte) (i + 1) : (byte) i;
+                wrapIL.Emit(OpCodes.Ldarg_S, argIndex);
+            }
+            else
+            {
+                short argIndex = isInstanceMethod ? (short) (i + 1) : i;
+                wrapIL.Emit(OpCodes.Ldarg, argIndex);
+            }
+        }
+
         void CreateDelegateTypeAndMethodInfo(ModuleBuilder moduleBuilder, TypeBuilder wrapperTypeBuilder, MethodInfo targetMethod, object target)
         {
             // Create the delegate type, wrap the targetMethod and create the delegate

@@ -188,7 +188,7 @@ namespace ExcelDna.Loader
 
 		public object MarshalNativeToManaged(IntPtr pNativeData)
 		{
-			throw new NotImplementedException("This marshaler only used for managed to native return type marshaling.");
+			throw new NotImplementedException("This marshaler is only used for managed to native return type marshaling.");
 		}
 
 		// Unused parts of ICustomMarshaler
@@ -1959,6 +1959,62 @@ namespace ExcelDna.Loader
 
         public void CleanUpManagedData(object ManagedObj) { }
         public void CleanUpNativeData(IntPtr pNativeData) { } // Can't do anything useful here, as the managed to native marshaling is for a return parameter.
+        public int GetNativeDataSize() { return -1; }
+    }
+
+    // This marshaller could have easily been written as a genertic XlEnumMarshaler<EnumType> type
+    // BUT that doesn't work. Marshal just does not like generics! I suspect this is because it requires
+    // the final type constructor to be available before any generic instantiation can take place
+    public unsafe class XlEnumMarshaler : ICustomMarshaler
+    {
+        public Type EnumType { get; private set; }
+
+        public XlEnumMarshaler(Type enumType)
+        {
+            EnumType = enumType;
+        }
+
+        static private readonly Dictionary<string, ICustomMarshaler> enumMarshallers = new Dictionary<string, ICustomMarshaler>();
+
+        public static ICustomMarshaler GetInstance(string marshalCookie)
+        {
+            ICustomMarshaler result;
+            if (!enumMarshallers.TryGetValue(marshalCookie, out result))
+            {
+                var enumType = Type.GetType(marshalCookie);
+                result = new XlEnumMarshaler(enumType);
+                enumMarshallers[marshalCookie] = result;
+            }
+            return result;
+        }
+
+        public IntPtr MarshalManagedToNative(object ManagedObj)
+        {
+            ICustomMarshaler stringMarshaller = XlString12ReturnMarshaler.GetInstance("");
+            var s = ManagedObj.ToString();
+            var result = stringMarshaller.MarshalManagedToNative(s);
+            return result;
+        }
+
+        public object MarshalNativeToManaged(IntPtr pNativeData)
+        {
+            XlString12* pdest = (XlString12*)pNativeData;
+            var str = Marshal.PtrToStringUni((IntPtr)pdest->Data, pdest->Length);
+            str = str.Trim();
+            object r;
+            try
+            {
+                r = Enum.Parse(EnumType, str);
+            }
+            catch (Exception x)
+            {
+                r = x;
+            }
+            return r;
+        }
+
+        public void CleanUpManagedData(object ManagedObj) { }
+        public void CleanUpNativeData(IntPtr pNativeData) { }
         public int GetNativeDataSize() { return -1; }
     }
 

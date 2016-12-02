@@ -191,7 +191,7 @@ namespace ExcelDna.Integration
 
         static bool IsParameterTypeSupported(Type type)
         {
-            return _supportedParameterTypes.Contains(type) || 
+            return _supportedParameterTypes.Contains(type) || type.IsEnum ||
                    (ExcelDnaUtil.ExcelVersion >= 14.0 && type == typeof(ExcelAsyncHandle));    // Only Excel 2010+
         }
 

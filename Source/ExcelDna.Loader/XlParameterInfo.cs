@@ -430,6 +430,14 @@ namespace ExcelDna.Loader
                     MarshalAsAttribute = GetMarshalAsAttribute(UnmanagedType.LPWStr);
                 }
             }
+            else if (type.IsEnum)
+            {
+                BoxedValueType = type;
+                Type marshallerType = typeof(XlEnumMarshaler);
+                MarshalAsAttribute = GetMarshalAsAttribute(marshallerType, type.AssemblyQualifiedName);
+                DelegateParamType = typeof(string);
+                XlType = "D%"; // LPWSTR
+            }
             else if (type == typeof(DateTime))
             {
                 if (isReturnType)
