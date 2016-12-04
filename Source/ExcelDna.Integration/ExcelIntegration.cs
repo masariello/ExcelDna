@@ -23,7 +23,7 @@ namespace ExcelDna.Integration
     internal delegate void RegisterDelegatesWithAttributesDelegate(List<Delegate> delegates, List<object> functionAttributes, List<List<object>> argumentAttributes);
     internal delegate byte[] GetResourceBytesDelegate(string resourceName, int type); // types: 0 - Assembly, 1 - Dna file, 2 - Image
     internal delegate void SyncMacroDelegate(double dValue);
-	public delegate object UnhandledExceptionHandler(object exceptionObject);
+    public delegate object UnhandledExceptionHandler(object exceptionObject);
 
     public static class ExcelIntegration
     {
@@ -113,11 +113,11 @@ namespace ExcelDna.Integration
             }
         }
 
-		private static UnhandledExceptionHandler unhandledExceptionHandler;
-		public static void RegisterUnhandledExceptionHandler(UnhandledExceptionHandler h)
-		{
-			unhandledExceptionHandler = h;
-		}
+        private static UnhandledExceptionHandler unhandledExceptionHandler;
+        public static void RegisterUnhandledExceptionHandler(UnhandledExceptionHandler h)
+        {
+            unhandledExceptionHandler = h;
+        }
 
         public static UnhandledExceptionHandler GetRegisterUnhandledExceptionHandler()
         {
@@ -155,25 +155,64 @@ namespace ExcelDna.Integration
         }
         #endregion
 
+        private static readonly Dictionary<ExcelReference, Exception> CellErrors = new Dictionary<ExcelReference, Exception>();
+        private static Exception _vbaError = null;
 
-		// WARNING: This method is bound by name from the ExcelDna.Loader in IntegrationHelpers.Bind.
-		// It should not throw an exception, and is called directly from the UDF exceptionhandler.
-		internal static object HandleUnhandledException(object exceptionObject)
-		{
-			if (unhandledExceptionHandler == null)
-			{
-				return ExcelError.ExcelErrorValue;
-			}
-			try
-			{
-				return unhandledExceptionHandler(exceptionObject);
-			}
-			catch (Exception ex)
-			{
-				Debug.WriteLine("Exception in UnhandledExceptionHandler: " + ex);
-				return ExcelError.ExcelErrorValue;
-			}
-		}
+        // Returns the error associated to the cellRefObj. NB cellRefObj=ExcelMissing when running ExcelDna UDFs from VBA using Application.Run.
+        public static Exception CellException(object cellRefObj)
+        {
+            Exception result = null;
+            ExcelReference cellRef = cellRefObj as ExcelReference;
+            if (cellRef != null)
+                lock (CellErrors)
+                {
+                    CellErrors.TryGetValue(cellRef, out result);
+                }
+            else if (cellRefObj is ExcelMissing)
+                result = _vbaError;
+            return result;
+        }
+
+        // Clears any exceptions recorded during past calc cycles.
+        public static void ClearExceptions()
+        {
+            lock (CellErrors)
+            {
+                CellErrors.Clear();
+            }
+            _vbaError = null;
+        }
+
+        // WARNING: This method is bound by name from the ExcelDna.Loader in IntegrationHelpers.Bind.
+        // It should not throw an exception, and is called directly from the UDF exceptionhandler.
+        internal static object HandleUnhandledException(object exceptionObject)
+        {
+            if (unhandledExceptionHandler == null)
+            {
+                var exception = (Exception)exceptionObject;
+                object cellRef = XlCall.Excel(XlCall.xlfCaller);
+                ExcelReference caller = cellRef as ExcelReference;
+                if (caller != null)
+                {
+                    lock (CellErrors)
+                    {
+                        CellErrors[caller] = exception;
+                    }
+                }
+                else if ((cellRef is ExcelError) && ((ExcelError)cellRef == ExcelError.ExcelErrorRef))
+                    _vbaError = exception;
+                return ExcelError.ExcelErrorValue;
+            }
+            try
+            {
+                return unhandledExceptionHandler(exceptionObject);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Exception in UnhandledExceptionHandler: " + ex);
+                return ExcelError.ExcelErrorValue;
+            }
+        }
 
         private static GetResourceBytesDelegate getResourceBytesDelegate;
         internal static void SetGetResourceBytesDelegate(GetResourceBytesDelegate d)
@@ -181,15 +220,15 @@ namespace ExcelDna.Integration
             getResourceBytesDelegate = d;
         }
 
-		internal static byte[] GetAssemblyBytes(string assemblyName)
-		{
-			return getResourceBytesDelegate(assemblyName, 0);
-		}
+        internal static byte[] GetAssemblyBytes(string assemblyName)
+        {
+            return getResourceBytesDelegate(assemblyName, 0);
+        }
 
-		internal static byte[] GetDnaFileBytes(string dnaFileName)
-		{
-			return getResourceBytesDelegate(dnaFileName, 1);
-		}
+        internal static byte[] GetDnaFileBytes(string dnaFileName)
+        {
+            return getResourceBytesDelegate(dnaFileName, 1);
+        }
 
         internal static byte[] GetImageBytes(string imageName)
         {
@@ -204,7 +243,7 @@ namespace ExcelDna.Integration
         // Called via Reflection from Loader
         internal static void Initialize(string xllPath)
         {
-			ExcelDnaUtil.Initialize();  // Set up window handle
+            ExcelDnaUtil.Initialize();  // Set up window handle
             Logging.TraceLogger.Initialize();
             DnaLibrary.InitializeRootLibrary(xllPath);
         }
@@ -217,17 +256,17 @@ namespace ExcelDna.Integration
 
         internal static void DnaLibraryAutoOpen()
         {
-			Logger.Initialization.Verbose("Enter Integration.DnaLibraryAutoOpen");
-			try
-			{
-				DnaLibrary.CurrentLibrary.AutoOpen();
+            Logger.Initialization.Verbose("Enter Integration.DnaLibraryAutoOpen");
+            try
+            {
+                DnaLibrary.CurrentLibrary.AutoOpen();
             }
-			catch (Exception e)
-			{
+            catch (Exception e)
+            {
                 Logger.Initialization.Error(e, "Integration.DnaLibraryAutoOpen Error");
-			}
+            }
             Logger.Initialization.Verbose("Exit Integration.DnaLibraryAutoOpen");
-		}
+        }
 
         internal static void DnaLibraryAutoClose()
         {
@@ -297,13 +336,13 @@ namespace ExcelDna.Integration
         // Called via Reflection from Loader
         internal static void CalculationCanceled()
         {
-            ExcelAsyncUtil.OnCalculationCanceled();    
+            ExcelAsyncUtil.OnCalculationCanceled();
         }
 
         // Called via Reflection from Loader
         internal static void CalculationEnded()
         {
-            ExcelAsyncUtil.OnCalculationEnded();    
+            ExcelAsyncUtil.OnCalculationEnded();
         }
 
         // Called via Reflection from Loader after Initialization

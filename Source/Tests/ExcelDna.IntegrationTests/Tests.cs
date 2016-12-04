@@ -96,13 +96,6 @@ namespace ExcelDna.Integration.Tests
             m_xlApp.DisplayAlerts = false;
 
             m_xlWorkbook = xlWorkbooks.Open(workbook, 0, true, 5, "", "", true, XlPlatform.xlWindows, "\t", false, false, 0, true, 1, 0);
-            var workDir = Path.Combine(outDir, "evidence");
-            if (!Directory.Exists(workDir))
-            {
-                try { Directory.CreateDirectory(workDir); } catch (Exception) { }; // more than 1 thread might get here, but only 1 will succeed
-            }
-            Assert.IsTrue(Directory.Exists(workDir));
-            m_xlApp.Run(testMacros.Name + "!setProcessCurrentDirectory", workDir);
 
             m_xlApp.CalculateBeforeSave = false;
 

@@ -10,33 +10,33 @@ namespace ExcelDna.Loader
 {
     // Return type and all parameters are described by this structure.
     internal class XlParameterInfo
-	{
-		public string XlType;
-		public string Name;         // Ignored for return 'parameter'
-		public string Description;  // Ignored for return 'parameter'
-		public bool AllowReference; // Ignored for return 'parameter'
-		public CustomAttributeBuilder MarshalAsAttribute;
-		public Type DelegateParamType;
-		public Type BoxedValueType; 	// Causes a wrapper to be created that boxes the return type from the user method,
-											// allowing Custom Marshaling to be injected
+    {
+        public string XlType;
+        public string Name;         // Ignored for return 'parameter'
+        public string Description;  // Ignored for return 'parameter'
+        public bool AllowReference; // Ignored for return 'parameter'
+        public CustomAttributeBuilder MarshalAsAttribute;
+        public Type DelegateParamType;
+        public Type BoxedValueType;     // Causes a wrapper to be created that boxes the return type from the user method,
+                                        // allowing Custom Marshaling to be injected
 
-		public XlParameterInfo(ParameterInfo paramInfo, object attrib)
-		{
-			// Add Name and Description
-			// CONSIDER: Override Marshaler for row/column arrays according to some attribute
+        public XlParameterInfo(ParameterInfo paramInfo, object attrib)
+        {
+            // Add Name and Description
+            // CONSIDER: Override Marshaler for row/column arrays according to some attribute
 
-			// Some pre-checks
-			if (paramInfo.ParameterType.IsByRef)
-				throw new DnaMarshalException("Parameter is ByRef: " + paramInfo.Name);
-			
-			// Default Name and Description
-			Name = paramInfo.Name;
-			Description = "";
-			AllowReference = false;
+            // Some pre-checks
+            if (paramInfo.ParameterType.IsByRef)
+                throw new DnaMarshalException("Parameter is ByRef: " + paramInfo.Name);
+
+            // Default Name and Description
+            Name = paramInfo.Name;
+            Description = "";
+            AllowReference = false;
 
             SetAttributeInfo(attrib);
-			SetTypeInfo(paramInfo.ParameterType, false, false);
-		}
+            SetTypeInfo(paramInfo.ParameterType, false, false);
+        }
 
         public XlParameterInfo(Type type, bool isReturnType, bool isExceptionSafe)
         {
@@ -106,118 +106,118 @@ namespace ExcelDna.Loader
         }
 
         private void SetTypeInfo4(Type type, bool isReturnType, bool isExceptionSafe)
-		{
-			// isExceptionSafe determines whether or not exception wrapper will be constructed
-			// if isExceptionSafe then no exception wrapper is created
-			// else the wrapper function returns an object, and the XlObjectMarshaler is always 
+        {
+            // isExceptionSafe determines whether or not exception wrapper will be constructed
+            // if isExceptionSafe then no exception wrapper is created
+            // else the wrapper function returns an object, and the XlObjectMarshaler is always 
             // used - the wrapper then ensures that #ERROR is returned from the function 
-			// if any exception is caught.
-			// if no exception, the return type is known to be of type BoxedReturnValueType
-			// and unboxed accordingly.
+            // if any exception is caught.
+            // if no exception, the return type is known to be of type BoxedReturnValueType
+            // and unboxed accordingly.
 
             // NOTE: There is also a list of supported parameter types in
             // AssemblyLoaded.cs, where the methods to register are extracted.
-            
-            // By default DelegateParamType is type
-			// changed for some return types to ensure boxing,
-			// to allow custom marshaling.
-			DelegateParamType = type;
 
-			if (type == typeof(double))
-			{
-				if (isReturnType && !isExceptionSafe)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(double);
-				}
-				else
-				{
-					XlType = "B";
-				}
-			}
-			else if (type == typeof(string))
-			{
-				// CONSIDER: Other options for string marshaling (nulls etc??)
-				if (isReturnType)
-				{
-					if (!isExceptionSafe)
-					{
-						XlType = "P"; // OPER
-						MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-						DelegateParamType = typeof(object);
-					}
-					else
-					{
-						XlType = "D"; // byte-counted string *
-						MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlStringReturnMarshaler));
-					}
-				}
-				else
-				{
-					XlType = "C"; // LPSTR
-					MarshalAsAttribute = GetMarshalAsAttribute(UnmanagedType.LPStr);
-				}
-			}
-			else if (type == typeof(DateTime))
-			{
-				if (isReturnType)
-				{
-					if (!isExceptionSafe)
-					{
-						XlType = "P"; // OPER
-						MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-						DelegateParamType = typeof(object);
-						BoxedValueType = typeof(DateTime);
-					}
-					else
-					{
-						// TODO: Consolidate with the above case? - NO! Cluster Connector does not allow OPER types
-						XlType = "E"; // double*
-						MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTimeMarshaler));
-						DelegateParamType = typeof(object);
-						BoxedValueType = typeof(DateTime);
-					}
-				}
-				else
-				{
-					XlType = "E"; // double*
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTimeMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(DateTime);
-				}
-			}
-			else if (type == typeof(double[]))
-			{
-				//if (isReturnType && !isExceptionSafe)
-				//{
-				//    XlType = 'P'; // OPER
-				//    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-				//    DelegateParamType = typeof(object);
-				//}
-				//else
-				//{
-					XlType = "K"; // FP*
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDoubleArrayMarshaler), "1");
-				//}
-			}
-			else if (type == typeof(double[,]))
-			{
-				//if (isReturnType && !isExceptionSafe)
-				//{
-				//    XlType = 'P'; // OPER
-				//    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-				//    DelegateParamType = typeof(object);
-				//}
-				//else
-				//{
-					XlType = "K"; // FP*
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDoubleArrayMarshaler), "2");
-				//}
-			}
-			else if (type == typeof(object))
-			{
+            // By default DelegateParamType is type
+            // changed for some return types to ensure boxing,
+            // to allow custom marshaling.
+            DelegateParamType = type;
+
+            if (type == typeof(double))
+            {
+                if (isReturnType && !isExceptionSafe)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(double);
+                }
+                else
+                {
+                    XlType = "B";
+                }
+            }
+            else if (type == typeof(string))
+            {
+                // CONSIDER: Other options for string marshaling (nulls etc??)
+                if (isReturnType)
+                {
+                    if (!isExceptionSafe)
+                    {
+                        XlType = "P"; // OPER
+                        MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                        DelegateParamType = typeof(object);
+                    }
+                    else
+                    {
+                        XlType = "D"; // byte-counted string *
+                        MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlStringReturnMarshaler));
+                    }
+                }
+                else
+                {
+                    XlType = "C"; // LPSTR
+                    MarshalAsAttribute = GetMarshalAsAttribute(UnmanagedType.LPStr);
+                }
+            }
+            else if (type == typeof(DateTime))
+            {
+                if (isReturnType)
+                {
+                    if (!isExceptionSafe)
+                    {
+                        XlType = "P"; // OPER
+                        MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                        DelegateParamType = typeof(object);
+                        BoxedValueType = typeof(DateTime);
+                    }
+                    else
+                    {
+                        // TODO: Consolidate with the above case? - NO! Cluster Connector does not allow OPER types
+                        XlType = "E"; // double*
+                        MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTimeMarshaler));
+                        DelegateParamType = typeof(object);
+                        BoxedValueType = typeof(DateTime);
+                    }
+                }
+                else
+                {
+                    XlType = "E"; // double*
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTimeMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(DateTime);
+                }
+            }
+            else if (type == typeof(double[]))
+            {
+                //if (isReturnType && !isExceptionSafe)
+                //{
+                //    XlType = 'P'; // OPER
+                //    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                //    DelegateParamType = typeof(object);
+                //}
+                //else
+                //{
+                XlType = "K"; // FP*
+                MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDoubleArrayMarshaler), "1");
+                //}
+            }
+            else if (type == typeof(double[,]))
+            {
+                //if (isReturnType && !isExceptionSafe)
+                //{
+                //    XlType = 'P'; // OPER
+                //    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                //    DelegateParamType = typeof(object);
+                //}
+                //else
+                //{
+                XlType = "K"; // FP*
+                MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDoubleArrayMarshaler), "2");
+                //}
+            }
+            else if (type == typeof(object))
+            {
                 // Before version 0.29 we had:
                 //    if (isReturnType || AllowReference)
                 //        XlType = "U"; // XLOPER
@@ -226,113 +226,113 @@ namespace ExcelDna.Loader
                 // - returning a reference always gives #VALUE
 
                 if (AllowReference)
-					XlType = "R"; // XLOPER
-				else
-					XlType = "P"; // OPER
-				MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-				DelegateParamType = typeof(object);
-			}
-			else if (type == typeof(object[]))
-			{
-				if (isReturnType && !isExceptionSafe)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-				}
-				else
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectArrayMarshaler), "1");
-				}
-			}
-			else if (type == typeof(object[,]))
-			{
-				if (isReturnType && !isExceptionSafe)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-				}
-				else
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectArrayMarshaler), "2");
-				}
-			}
-			else if (type == typeof(bool))
-			{
-				if (isReturnType)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(bool);
+                    XlType = "R"; // XLOPER
+                else
+                    XlType = "P"; // OPER
+                MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                DelegateParamType = typeof(object);
+            }
+            else if (type == typeof(object[]))
+            {
+                if (isReturnType && !isExceptionSafe)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                }
+                else
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectArrayMarshaler), "1");
+                }
+            }
+            else if (type == typeof(object[,]))
+            {
+                if (isReturnType && !isExceptionSafe)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                }
+                else
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectArrayMarshaler), "2");
+                }
+            }
+            else if (type == typeof(bool))
+            {
+                if (isReturnType)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(bool);
 
-				}
-				else
-				{
-					// XlType = "J"; // int32
+                }
+                else
+                {
+                    // XlType = "J"; // int32
                     XlType = "P"; // OPER
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlBooleanMarshaler));
                     DelegateParamType = typeof(object);
                     BoxedValueType = typeof(bool);
-				}
-			}
-			else if (type == typeof(int))
-			{
-				if (isReturnType)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(int);
-				}
-				else
-				{
-					// XlType = "J";
+                }
+            }
+            else if (type == typeof(int))
+            {
+                if (isReturnType)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(int);
+                }
+                else
+                {
+                    // XlType = "J";
                     XlType = "E"; // double*
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlInt32ParameterMarshaler));
                     DelegateParamType = typeof(object);
                     BoxedValueType = typeof(int);
-				}
-			}
-			else if (type == typeof(short))
-			{
-				if (isReturnType)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(short);
-				}
-				else
-				{
-					// XlType = "I";
+                }
+            }
+            else if (type == typeof(short))
+            {
+                if (isReturnType)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(short);
+                }
+                else
+                {
+                    // XlType = "I";
                     XlType = "E"; // double*
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlInt16ParameterMarshaler));
                     DelegateParamType = typeof(object);
                     BoxedValueType = typeof(short);
-				}
-			}
-			else if (type == typeof(ushort))
-			{
-				if (isReturnType)
-				{
-					XlType = "P"; // OPER
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(ushort);
-				}
-				else
-				{
-					// XlType = "H";
+                }
+            }
+            else if (type == typeof(ushort))
+            {
+                if (isReturnType)
+                {
+                    XlType = "P"; // OPER
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlObjectMarshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(ushort);
+                }
+                else
+                {
+                    // XlType = "H";
                     XlType = "E"; // double*
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlUInt16ParameterMarshaler));
                     DelegateParamType = typeof(object);
                     BoxedValueType = typeof(ushort);
-				}
-			}
+                }
+            }
             else if (type == typeof(decimal))
             {
                 if (isReturnType)
@@ -346,7 +346,7 @@ namespace ExcelDna.Loader
                 {
                     XlType = "E"; // double*
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDecimalParameterMarshaler));
-				    DelegateParamType = typeof(object);
+                    DelegateParamType = typeof(object);
                     BoxedValueType = typeof(decimal);
                 }
             }
@@ -369,11 +369,11 @@ namespace ExcelDna.Loader
                 }
             }
             else
-			{
-				// The function is bad and cannot be marshaled to Excel
-				throw new DnaMarshalException("Unknown Data Type: " + type.ToString());
-			}
-		}
+            {
+                // The function is bad and cannot be marshaled to Excel
+                throw new DnaMarshalException("Unknown Data Type: " + type.ToString());
+            }
+        }
 
         private void SetTypeInfo12(Type type, bool isReturnType, bool isExceptionSafe)
         {
@@ -430,6 +430,14 @@ namespace ExcelDna.Loader
                     MarshalAsAttribute = GetMarshalAsAttribute(UnmanagedType.LPWStr);
                 }
             }
+            else if (type.IsEnum)
+            {
+                BoxedValueType = type;
+                Type marshallerType = typeof(XlEnumMarshaler);
+                MarshalAsAttribute = GetMarshalAsAttribute(marshallerType, type.AssemblyQualifiedName);
+                DelegateParamType = typeof(string);
+                XlType = "D%"; // LPWSTR
+            }
             else if (type == typeof(DateTime))
             {
                 if (isReturnType)
@@ -445,17 +453,17 @@ namespace ExcelDna.Loader
                     {
                         // TODO: Consolidate with the above case?
                         XlType = "E"; // double*
-						MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTime12Marshaler));
+                        MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTime12Marshaler));
                         DelegateParamType = typeof(object);
                         BoxedValueType = typeof(DateTime);
                     }
                 }
                 else
                 {
-					XlType = "E"; // double*
-					MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTime12Marshaler));
-					DelegateParamType = typeof(object);
-					BoxedValueType = typeof(DateTime);
+                    XlType = "E"; // double*
+                    MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlDateTime12Marshaler));
+                    DelegateParamType = typeof(object);
+                    BoxedValueType = typeof(DateTime);
                 }
             }
             else if (type == typeof(double[]))
@@ -494,7 +502,7 @@ namespace ExcelDna.Loader
                 // and thus registered as U in most cases. 
                 // This does not work in HPC setting, and seems to have been a mistake anyway 
                 // - returning a reference always gives #VALUE
-            
+
                 if (AllowReference)
                     XlType = "U"; // XLOPER
                 else
@@ -541,7 +549,7 @@ namespace ExcelDna.Loader
                 }
                 else
                 {
-					// XlType = "J"; // int32
+                    // XlType = "J"; // int32
                     XlType = "Q"; // OPER
                     MarshalAsAttribute = GetMarshalAsAttribute(typeof(XlBoolean12Marshaler));
                     DelegateParamType = typeof(object);
@@ -649,43 +657,43 @@ namespace ExcelDna.Loader
             }
         }
 
-		private static CustomAttributeBuilder GetMarshalAsAttribute(UnmanagedType unmanagedType)
-		{
-			Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
-			ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
+        private static CustomAttributeBuilder GetMarshalAsAttribute(UnmanagedType unmanagedType)
+        {
+            Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
+            ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
 
-			CustomAttributeBuilder builder = new CustomAttributeBuilder(
-								classCtorInfo,
-								new object[] { unmanagedType });
-			return builder;
-		}
+            CustomAttributeBuilder builder = new CustomAttributeBuilder(
+                                classCtorInfo,
+                                new object[] { unmanagedType });
+            return builder;
+        }
 
-		private static CustomAttributeBuilder GetMarshalAsAttribute(Type marshalTypeRef)
-		{
-			// CONSIDER: Caching some of the metadata loaded here
-			Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
-			ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
+        private static CustomAttributeBuilder GetMarshalAsAttribute(Type marshalTypeRef)
+        {
+            // CONSIDER: Caching some of the metadata loaded here
+            Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
+            ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
 
-			CustomAttributeBuilder builder = new CustomAttributeBuilder(
-								classCtorInfo,
-								new object[] { UnmanagedType.CustomMarshaler },
-								new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
-								new object[] { marshalTypeRef });
-			return builder;
-		}
+            CustomAttributeBuilder builder = new CustomAttributeBuilder(
+                                classCtorInfo,
+                                new object[] { UnmanagedType.CustomMarshaler },
+                                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef") },
+                                new object[] { marshalTypeRef });
+            return builder;
+        }
 
-		private static CustomAttributeBuilder GetMarshalAsAttribute(Type marshalTypeRef, string marshalCookie)
-		{
-			// CONSIDER: Caching some of the metadata loaded here
-			Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
-			ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
+        private static CustomAttributeBuilder GetMarshalAsAttribute(Type marshalTypeRef, string marshalCookie)
+        {
+            // CONSIDER: Caching some of the metadata loaded here
+            Type[] ctorParams = new Type[] { typeof(UnmanagedType) };
+            ConstructorInfo classCtorInfo = typeof(MarshalAsAttribute).GetConstructor(ctorParams);
 
-			CustomAttributeBuilder builder = new CustomAttributeBuilder(
-								classCtorInfo,
-								new object[] { UnmanagedType.CustomMarshaler },
-								new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef"), typeof(MarshalAsAttribute).GetField("MarshalCookie") },
-								new object[] { marshalTypeRef, marshalCookie });
-			return builder;
-		}
-	}
+            CustomAttributeBuilder builder = new CustomAttributeBuilder(
+                                classCtorInfo,
+                                new object[] { UnmanagedType.CustomMarshaler },
+                                new FieldInfo[] { typeof(MarshalAsAttribute).GetField("MarshalTypeRef"), typeof(MarshalAsAttribute).GetField("MarshalCookie") },
+                                new object[] { marshalTypeRef, marshalCookie });
+            return builder;
+        }
+    }
 }

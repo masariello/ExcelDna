@@ -93,15 +93,15 @@ namespace ExcelDna.Loader
             }
 
             ParameterInfo[] parameters = targetMethod.GetParameters();
-            
+
             // Parameters - meta-data and type conversion
             Parameters = new XlParameterInfo[parameters.Length];
             for (int i = 0; i < parameters.Length; i++)
             {
                 object argAttrib = null;
-                if ( argumentAttributes != null && i < argumentAttributes.Count)
+                if (argumentAttributes != null && i < argumentAttributes.Count)
                     argAttrib = argumentAttributes[i];
-                 Parameters[i] = new XlParameterInfo(parameters[i], argAttrib);
+                Parameters[i] = new XlParameterInfo(parameters[i], argAttrib);
             }
 
             // A native async function might still be marked as a command - check and fix.
@@ -116,12 +116,12 @@ namespace ExcelDna.Loader
 
 
         // Native async functions have a final parameter that is an ExcelAsyncHandle.
-        public bool IsExcelAsyncFunction 
-        { 
-            get 
-            { 
-                return Parameters.Length > 0 && Parameters[Parameters.Length - 1].IsExcelAsyncHandle; 
-            } 
+        public bool IsExcelAsyncFunction
+        {
+            get
+            {
+                return Parameters.Length > 0 && Parameters[Parameters.Length - 1].IsExcelAsyncHandle;
+            }
         }
 
         // Basic setup - get description, category etc.
@@ -201,18 +201,18 @@ namespace ExcelDna.Loader
             //}
 
             Type attribType = attrib.GetType();
-                
+
             if (TypeHelper.TypeHasAncestorWithFullName(attribType, "ExcelDna.Integration.ExcelFunctionAttribute"))
             {
-                string name = (string) attribType.GetField("Name").GetValue(attrib);
-                string description = (string) attribType.GetField("Description").GetValue(attrib);
-                string category = (string) attribType.GetField("Category").GetValue(attrib);
-                string helpTopic = (string) attribType.GetField("HelpTopic").GetValue(attrib);
-                bool isVolatile = (bool) attribType.GetField("IsVolatile").GetValue(attrib);
-                bool isExceptionSafe = (bool) attribType.GetField("IsExceptionSafe").GetValue(attrib);
-                bool isMacroType = (bool) attribType.GetField("IsMacroType").GetValue(attrib);
-                bool isHidden = (bool) attribType.GetField("IsHidden").GetValue(attrib);
-                bool isThreadSafe = (bool) attribType.GetField("IsThreadSafe").GetValue(attrib);
+                string name = (string)attribType.GetField("Name").GetValue(attrib);
+                string description = (string)attribType.GetField("Description").GetValue(attrib);
+                string category = (string)attribType.GetField("Category").GetValue(attrib);
+                string helpTopic = (string)attribType.GetField("HelpTopic").GetValue(attrib);
+                bool isVolatile = (bool)attribType.GetField("IsVolatile").GetValue(attrib);
+                bool isExceptionSafe = (bool)attribType.GetField("IsExceptionSafe").GetValue(attrib);
+                bool isMacroType = (bool)attribType.GetField("IsMacroType").GetValue(attrib);
+                bool isHidden = (bool)attribType.GetField("IsHidden").GetValue(attrib);
+                bool isThreadSafe = (bool)attribType.GetField("IsThreadSafe").GetValue(attrib);
                 bool isClusterSafe = (bool)attribType.GetField("IsClusterSafe").GetValue(attrib);
                 bool explicitRegistration = (bool)attribType.GetField("ExplicitRegistration").GetValue(attrib);
                 bool suppressOverwriteError = (bool)attribType.GetField("SuppressOverwriteError").GetValue(attrib);
@@ -246,14 +246,14 @@ namespace ExcelDna.Loader
             }
             else if (TypeHelper.TypeHasAncestorWithFullName(attribType, "ExcelDna.Integration.ExcelCommandAttribute"))
             {
-                string name = (string) attribType.GetField("Name").GetValue(attrib);
-                string description = (string) attribType.GetField("Description").GetValue(attrib);
-                string helpTopic = (string) attribType.GetField("HelpTopic").GetValue(attrib);
-                string shortCut = (string) attribType.GetField("ShortCut").GetValue(attrib);
-                string menuName = (string) attribType.GetField("MenuName").GetValue(attrib);
-                string menuText = (string) attribType.GetField("MenuText").GetValue(attrib);
-//                    bool isHidden = (bool)attribType.GetField("IsHidden").GetValue(attrib);
-                bool isExceptionSafe = (bool) attribType.GetField("IsExceptionSafe").GetValue(attrib);
+                string name = (string)attribType.GetField("Name").GetValue(attrib);
+                string description = (string)attribType.GetField("Description").GetValue(attrib);
+                string helpTopic = (string)attribType.GetField("HelpTopic").GetValue(attrib);
+                string shortCut = (string)attribType.GetField("ShortCut").GetValue(attrib);
+                string menuName = (string)attribType.GetField("MenuName").GetValue(attrib);
+                string menuText = (string)attribType.GetField("MenuText").GetValue(attrib);
+                //                    bool isHidden = (bool)attribType.GetField("IsHidden").GetValue(attrib);
+                bool isExceptionSafe = (bool)attribType.GetField("IsExceptionSafe").GetValue(attrib);
                 bool explicitRegistration = (bool)attribType.GetField("ExplicitRegistration").GetValue(attrib);
                 bool suppressOverwriteError = (bool)attribType.GetField("SuppressOverwriteError").GetValue(attrib);
 
@@ -281,7 +281,7 @@ namespace ExcelDna.Loader
                 {
                     MenuText = menuText;
                 }
-//                    IsHidden = isHidden;  // Only for functions.
+                //                    IsHidden = isHidden;  // Only for functions.
                 IsExceptionSafe = isExceptionSafe;
                 ExplicitRegistration = explicitRegistration;
                 SuppressOverwriteError = suppressOverwriteError;
@@ -289,7 +289,7 @@ namespace ExcelDna.Loader
                 // Override IsCommand, even though this 'macro' might have a return value.
                 // Allow for more flexibility in what kind of macros are supported, particularly for calling
                 // via Application.Run.
-                IsCommand = true;   
+                IsCommand = true;
             }
         }
 
@@ -300,7 +300,7 @@ namespace ExcelDna.Loader
             {
                 return;
             }
-           // DOCUMENT: If HelpTopic is not rooted - it is expanded relative to .xll path.
+            // DOCUMENT: If HelpTopic is not rooted - it is expanded relative to .xll path.
             // If http url does not end with !0 it is appended.
             // I don't think https is supported, but it should not be considered an 'unrooted' path anyway.
             // I could not get file:/// working (only checked with Excel 2013)
@@ -324,18 +324,18 @@ namespace ExcelDna.Loader
             MethodBuilder methodBuilder;
             XlParameterInfo[] paramInfos = Parameters;
             Type[] paramTypes = Array.ConvertAll<XlParameterInfo, Type>(paramInfos,
-                                                                        delegate(XlParameterInfo pi)
+                                                                        delegate (XlParameterInfo pi)
                                                                             { return pi.DelegateParamType; });
 
             // Create a delegate that has the same signature as the method we would like to hook up to
             typeBuilder = modBuilder.DefineType("f" + Index++ + "Delegate",
                                                 TypeAttributes.Class | TypeAttributes.Public |
                                                 TypeAttributes.Sealed,
-                                                typeof (System.MulticastDelegate));
+                                                typeof(System.MulticastDelegate));
             ConstructorBuilder constructorBuilder = typeBuilder.DefineConstructor(
                 MethodAttributes.RTSpecialName | MethodAttributes.HideBySig |
                 MethodAttributes.Public, CallingConventions.Standard,
-                new Type[] {typeof (object), typeof (int)});
+                new Type[] { typeof(object), typeof(int) });
             constructorBuilder.SetImplementationFlags(MethodImplAttributes.Runtime |
                                                       MethodImplAttributes.Managed);
 
@@ -384,7 +384,7 @@ namespace ExcelDna.Loader
             //       For other types it shouldn't matter...
             if (IsExceptionSafe
                 && Array.TrueForAll(Parameters,
-                                    delegate(XlParameterInfo pi) { return pi.BoxedValueType == null; })
+                                    delegate (XlParameterInfo pi) { return pi.BoxedValueType == null; })
                 && (!HasReturnType || ReturnType.BoxedValueType == null))
             {
                 return targetMethod;
@@ -392,14 +392,14 @@ namespace ExcelDna.Loader
 
             // DateTime input parameters are never exception safe - we need to be able to fail out of the 
             // marshaler when the passed-in argument is an invalid date.
-            bool emitExceptionHandler = 
-                !IsExceptionSafe || 
-                Array.Exists(Parameters, 
-                             delegate(XlParameterInfo pi) { return pi.BoxedValueType == typeof(DateTime); });
+            bool emitExceptionHandler =
+                !IsExceptionSafe ||
+                Array.Exists(Parameters,
+                             delegate (XlParameterInfo pi) { return pi.BoxedValueType == typeof(DateTime); });
 
             // Now we create a dynamic wrapper
             Type[] paramTypes = Array.ConvertAll<XlParameterInfo, Type>(Parameters,
-                                                                        delegate(XlParameterInfo pi)
+                                                                        delegate (XlParameterInfo pi)
                                                                             { return pi.DelegateParamType; });
             if (isInstanceMethod)
             {
@@ -409,9 +409,9 @@ namespace ExcelDna.Loader
                 paramTypes = allParams;
             }
 
-            MethodBuilder wrapper =  wrapperType.DefineMethod(
+            MethodBuilder wrapper = wrapperType.DefineMethod(
                 string.Format("Wrapped_f{0}_{1}", Index, targetMethod.Name),
-                MethodAttributes.Public | MethodAttributes.Static, 
+                MethodAttributes.Public | MethodAttributes.Static,
                 HasReturnType ? ReturnType.DelegateParamType : typeof(void),
                 paramTypes);
 
@@ -427,6 +427,7 @@ namespace ExcelDna.Loader
             ILGenerator wrapIL = wrapper.GetILGenerator();
             Label endOfMethod = wrapIL.DefineLabel();
 
+            LocalBuilder exceptionobj = wrapIL.DeclareLocal(typeof(Exception));
             LocalBuilder retobj = null;
             if (HasReturnType)
             {
@@ -458,6 +459,26 @@ namespace ExcelDna.Loader
                     wrapIL.Emit(OpCodes.Ldarg, argIndex);
                 }
                 XlParameterInfo pi = Parameters[i];
+                // A marshaller can fail and store an exception in the boxed parameter.
+                // Here we test if that's the case and rethrow the exception, if needed.
+                if (!pi.DelegateParamType.IsValueType)
+                {
+                    wrapIL.Emit(OpCodes.Stloc_0);
+                    wrapIL.Emit(OpCodes.Ldloc_0);
+                    wrapIL.Emit(OpCodes.Isinst, typeof(Exception));
+                    wrapIL.Emit(OpCodes.Stloc_1);
+                    wrapIL.Emit(OpCodes.Ldloc_1);
+                    wrapIL.Emit(OpCodes.Ldnull);
+                    wrapIL.Emit(OpCodes.Ceq);
+
+                    Label afterParamThrow = wrapIL.DefineLabel();
+                    wrapIL.Emit(OpCodes.Brtrue, afterParamThrow);
+                    wrapIL.Emit(OpCodes.Ldloc_1, exceptionobj);
+                    wrapIL.Emit(OpCodes.Throw);
+
+                    wrapIL.MarkLabel(afterParamThrow);
+                    wrapIL.Emit(OpCodes.Ldloc_0);
+                }
                 if (pi.BoxedValueType != null)
                 {
                     wrapIL.Emit(OpCodes.Unbox_Any, pi.BoxedValueType);
@@ -479,8 +500,8 @@ namespace ExcelDna.Loader
             if (emitExceptionHandler)
             {
                 wrapIL.Emit(OpCodes.Leave_S, endOfMethod);
-                wrapIL.BeginCatchBlock(typeof (object));
-                if (HasReturnType && ReturnType.DelegateParamType == typeof (object))
+                wrapIL.BeginCatchBlock(typeof(object));
+                if (HasReturnType && ReturnType.DelegateParamType == typeof(object))
                 {
                     // Call Integration.HandleUnhandledException - Exception object is on the stack.
                     wrapIL.Emit(OpCodes.Call, typeof(IntegrationHelpers).GetMethod("HandleUnhandledException"));
@@ -510,14 +531,14 @@ namespace ExcelDna.Loader
 
             return wrapper;
         }
-        
+
         void CreateDelegateTypeAndMethodInfo(ModuleBuilder moduleBuilder, TypeBuilder wrapperTypeBuilder, MethodInfo targetMethod, object target)
         {
             // Create the delegate type, wrap the targetMethod and create the delegate
 
             // CONSIDER: Currently we need a special delegate type here so that we can hook on the marshaling attributes.
             //           Future version might do straight-forward marshaling, so we can get rid of these types (just use generic methods)
-            
+
             // FirstArgument (if received) is not used in the delegate type created ...
             _delegateType = CreateDelegateType(moduleBuilder);
             // ... but is baked into the delegate itself.
@@ -536,7 +557,7 @@ namespace ExcelDna.Loader
                 xlDelegate = Delegate.CreateDelegate(_delegateType, _target, _methodInfo);
             else
                 xlDelegate = Delegate.CreateDelegate(_delegateType, _methodInfo);
-            
+
             // Need to add a reference to prevent garbage collection of our delegate
             // Don't need to pin, according to 
             // "How to: Marshal Callbacks and Delegates Using C++ Interop"
@@ -573,7 +594,7 @@ namespace ExcelDna.Loader
 
             for (int i = 0; i < methods.Count; i++)
             {
-                MethodInfo mi  = methods[i];
+                MethodInfo mi = methods[i];
                 object target = (targets == null) ? null : targets[i];
                 object methodAttrib = (methodAttributes != null && i < methodAttributes.Count) ? methodAttributes[i] : null;
                 List<object> argAttribs = (argumentAttributes != null && i < argumentAttributes.Count) ? argumentAttributes[i] : null;
@@ -667,7 +688,7 @@ namespace ExcelDna.Loader
     }
 
     internal static class TypeHelper
-    {   
+    {
         internal static bool TypeHasAncestorWithFullName(Type type, string fullName)
         {
             if (type == null) return false;
@@ -676,12 +697,12 @@ namespace ExcelDna.Loader
         }
     }
 
-	// TODO: improve information about the problem
-	internal class DnaMarshalException : Exception
-	{
-		public DnaMarshalException(string message) :
-			base(message)
-		{
-		}
-	}
+    // TODO: improve information about the problem
+    internal class DnaMarshalException : Exception
+    {
+        public DnaMarshalException(string message) :
+            base(message)
+        {
+        }
+    }
 }
